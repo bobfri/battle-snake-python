@@ -18,8 +18,6 @@ class Board(object):
       
       return
 
-
-    #TODO clean this
     def check(self,move,head,length):
       moves_ressult = {
           "up":{"x":0,"y":1},
@@ -135,7 +133,7 @@ class Battlesnake(object):
           print(e)
           print("random")
 
-          #move = random.choice(possible_moves)
+          move = random.choice(possible_moves)
         print(f"MOVE: {move}")
         return {"move": move}
 
