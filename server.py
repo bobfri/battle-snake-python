@@ -86,10 +86,9 @@ class Battlesnake(object):
     @cherrypy.tools.json_in()
     @cherrypy.tools.json_out()
     def move(self):
-        # This function is called on every turn of a game. It's how your snake decides where to move.
-        # Valid moves are "up", "down", "left", or "right".
-        # TODO: Use the information in cherrypy.request.json to decide your next move.
+        
         data = cherrypy.request.json
+        print(data["game"])
         head = data["you"]["head"]
         self.board = Board(data["board"]["width"],data["board"]["height"])
         possible_moves = ["up", "down", "left", "right"]
@@ -105,23 +104,14 @@ class Battlesnake(object):
           if len(tryMoves)==1 and len(board_sanke_death_move)==0:
             move= tryMoves[0]
           else:
-            print(tryMoves)
             tryMovesNearest = self.nearest_food(tryMoves.copy(),head,data["board"]["food"])
             move = random.choice(tryMovesNearest)
-            print(tryMovesNearest)
-            print(tryMoves)
 
             trapMove=[]
             trapMove.append(self.board.check(move,data["you"]["head"],data["you"]["length"]))
-            print(trapMove)
-            print(tryMoves)
             if not trapMove[-1]["wontTrap"]:
-              print(f"before: {tryMoves}")
               tryMovesNearest.remove(move)
-              print(f"after: {tryMoves}")
               if len(tryMovesNearest) == 1:
-                print(tryMoves)
-                print(move)
 
                 tryMoves.remove(move)
                 move=tryMovesNearest[0]
@@ -133,13 +123,11 @@ class Battlesnake(object):
                     tryMoves.extend(board_sanke_death_move)
                     trapMove.sort(key=lambda x:x["visited"])
                     move=trapMove[-1]["move"]
-                    print(f"sorted trap: {trapMove}")
 
                   else:
                     move=tryMoves[0]
                     trapMove.append(self.board.check(move,data["you"]["head"],data["you"]["length"]))
-                    
-            print(trapMove)    
+
 
         except IndexError as e:
           print(e)
