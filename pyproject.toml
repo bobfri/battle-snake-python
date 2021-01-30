@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "starter-snake-python"
-version = "1.0.0"
-description = "A simple Battlesnake written in Python"
+name = "battle-snake-python"
+version = "1.2.0"
+description = "a hungry hungry snake"
 authors = ["Battlesnake Developers <developers@battlesnake.com>"]
 
 [tool.poetry.dependencies]
