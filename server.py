@@ -18,6 +18,8 @@ class Board(object):
       
       return
 
+
+    #TODO clean this
     def check(self,move,head,length):
       moves_ressult = {
           "up":{"x":0,"y":1},
@@ -25,8 +27,8 @@ class Board(object):
          "left":{"x":-1,"y":0}, 
          "right":{"x":1,"y":0}}
       to_visite=[{"x":(moves_ressult.get(move)["x"]+head["x"]),"y":(moves_ressult.get(move)["y"]+head["y"])}]
-    
-      self.board[to_visite[0]["x"]][to_visite[0]["y"]]["visited"]= False
+      board=self.board.copy()
+      board[to_visite[0]["x"]][to_visite[0]["y"]]["visited"]= False
       visited_stack=[]
       while len(visited_stack)<=length:
         if len(to_visite)==0:
@@ -34,20 +36,20 @@ class Board(object):
         tempPlace=to_visite.pop(0)
         visited_stack.append(tempPlace)
         if (tempPlace["y"]+1)<self.maxy:
-          if not self.board[tempPlace["x"]][tempPlace["y"]+1]["visited"] and not self.board[tempPlace["x"]][tempPlace["y"]+1]["snake"]:
-            self.board[tempPlace["x"]][tempPlace["y"]+1]["visited"]= True
+          if not board[tempPlace["x"]][tempPlace["y"]+1]["visited"] and not board[tempPlace["x"]][tempPlace["y"]+1]["snake"]:
+            board[tempPlace["x"]][tempPlace["y"]+1]["visited"]= True
             to_visite.append({"x":tempPlace["x"],"y":tempPlace["y"]+1})
         if (tempPlace["y"]-1)>=0:
-          if not self.board[tempPlace["x"]][tempPlace["y"]-1]["visited"] and not self.board[tempPlace["x"]][tempPlace["y"]-1]["snake"]:
-            self.board[tempPlace["x"]][tempPlace["y"]-1]["visited"]= True
+          if not board[tempPlace["x"]][tempPlace["y"]-1]["visited"] and not board[tempPlace["x"]][tempPlace["y"]-1]["snake"]:
+            board[tempPlace["x"]][tempPlace["y"]-1]["visited"]= True
             to_visite.append({"x":tempPlace["x"],"y":tempPlace["y"]-1})
         if (tempPlace["x"]+1)<self.maxx:
-          if not self.board[tempPlace["x"]+1][tempPlace["y"]]["visited"] and not self.board[tempPlace["x"]+1][tempPlace["y"]]["snake"]:
-            self.board[tempPlace["x"]+1][tempPlace["y"]]["visited"]= True
+          if not board[tempPlace["x"]+1][tempPlace["y"]]["visited"] and not board[tempPlace["x"]+1][tempPlace["y"]]["snake"]:
+            board[tempPlace["x"]+1][tempPlace["y"]]["visited"]= True
             to_visite.append({"x":tempPlace["x"]+1,"y":tempPlace["y"]})
         if (tempPlace["x"]-1)>=0:
-          if not self.board[tempPlace["x"]-1][tempPlace["y"]]["visited"] and not self.board[tempPlace["x"]-1][tempPlace["y"]]["snake"]:
-            self.board[tempPlace["x"]-1][tempPlace["y"]]["visited"]= True
+          if not board[tempPlace["x"]-1][tempPlace["y"]]["visited"] and not board[tempPlace["x"]-1][tempPlace["y"]]["snake"]:
+            board[tempPlace["x"]-1][tempPlace["y"]]["visited"]= True
             to_visite.append({"x":tempPlace["x"]-1,"y":tempPlace["y"]})
       return {"wontTrap":True,"visited":0, "move":move}
 
@@ -161,7 +163,7 @@ class Battlesnake(object):
           print(e)
           ("random")
 
-          move = random.choice(possible_moves)
+          #move = random.choice(possible_moves)
         print(f"MOVE: {move}")
         return {"move": move}
 
