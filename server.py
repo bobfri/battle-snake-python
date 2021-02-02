@@ -9,14 +9,23 @@ For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python
 """
 class Board(object):
     def __init__(self, maxx, maxy):
-      self.board=[[{"visited":False,"snake":False} for i in range(maxx)] for j in range(maxy)]
+      self.board=[[{"visited":False,"snake":False} for i in range(maxy)] for j in range(maxx)]
       self.maxx=maxx
       self.maxy=maxy
+      self.turn=0
+      return
+
+    def clean(self,turn):
+      self.turn=turn
+      self.board=[[{"visited":False,"snake":False} for i in range(self.maxy)] for j in range(self.maxx)]
+
       return
     def snake(self,snake_piece):
+
       self.board[snake_piece["x"]][snake_piece["y"]]["snake"]=True
       
       return
+
 
     def check(self,move,head,length):
       moves_ressult = {
@@ -57,7 +66,7 @@ class Board(object):
       return
 
 class Battlesnake(object):
-    board= Board(0,0)
+    boards= {}
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def index(self):
@@ -78,7 +87,7 @@ class Battlesnake(object):
         # This function is called everytime your snake is entered into a game.
         # cherrypy.request.json contains information about the game that's about to be played.
         data = cherrypy.request.json
-
+        self.boards.update({data["game"]["id"]: Board(data["board"]["width"],data["board"]["height"])})
         print("START")
         return "ok"
     
@@ -86,53 +95,73 @@ class Battlesnake(object):
     @cherrypy.tools.json_in()
     @cherrypy.tools.json_out()
     def move(self):
-        
         data = cherrypy.request.json
-        print(data["game"])
+        board=self.boards[data["game"]["id"]]
+        if board.turn!= data["turn"]:
+          board.clean(data["turn"])
         head = data["you"]["head"]
-        self.board = Board(data["board"]["width"],data["board"]["height"])
         possible_moves = ["up", "down", "left", "right"]
         tryMoves=possible_moves.copy()
         board_sanke_death_move=self.clashWithHead(head)
         remove_move=self.outOfBoardMove()+self.crashIntoSnake(head)
-        remove_move.extend(board_sanke_death_move)
+        remove_move.extend(board_sanke_death_move.copy())
         #self.board.printboard()
         tryMoves=[temp for temp in possible_moves if temp not in remove_move]
+        print(f"trymove 1:{tryMoves}")
         try :
           if len(tryMoves)==0:
             tryMoves.extend(board_sanke_death_move)
           if len(tryMoves)==1 and len(board_sanke_death_move)==0:
             move= tryMoves[0]
           else:
+            print(f"trymove 2:{tryMoves}")
+            #if len(data["board"]["snakes"])==2:
+              #123ertjC XtryMovesNearest = self.kill(tryMoves.copy(),head,[data["board"]["snakes"]]);
+              #print(data["board"]["snakes"])
             tryMovesNearest = self.nearest_food(tryMoves.copy(),head,data["board"]["food"])
             move = random.choice(tryMovesNearest)
 
             trapMove=[]
-            trapMove.append(self.board.check(move,data["you"]["head"],data["you"]["length"]))
+            trapMove.append(board.check(move,data["you"]["head"],data["you"]["length"]))
+            print(f"trymove 3:{tryMoves}")
+            print(f"trymovenearest 1:{tryMovesNearest}")
+            print(f"trapmove 1:{trapMove}")
             if not trapMove[-1]["wontTrap"]:
+              
               tryMovesNearest.remove(move)
+              print(f"trymove 4:{tryMoves}")
+              print(f"trymovenearest 2:{tryMovesNearest}")
+              print(f"trapmove 2:{trapMove}")
               if len(tryMovesNearest) == 1:
-
                 tryMoves.remove(move)
                 move=tryMovesNearest[0]
-                trapMove.append(self.board.check(move,data["you"]["head"],data["you"]["length"]))
+                trapMove.append(board.check(move,data["you"]["head"],data["you"]["length"]))
               while len(tryMoves)>0:
+                print(f"trymove 5:{tryMoves}")
+                print(f"trymovenearest 3:{tryMovesNearest}")
+                print(f"trapmove 3:{trapMove}")
+                print(f"move 1:{move}")
                 tryMoves.remove(move)
+                print(f"trymove 6:{tryMoves}")
+                print(f"trymovenearest 4:{tryMovesNearest}")
+                print(f"trapmove 4:{trapMove}")
                 if not trapMove[-1]["wontTrap"]:
                   if len(tryMoves)==0:
-                    tryMoves.extend(board_sanke_death_move)
+                    tryMoves.extend(board_sanke_death_move.copy())
                     trapMove.sort(key=lambda x:x["visited"])
                     move=trapMove[-1]["move"]
-
+                  if len(tryMoves)==0:
+                    break
                   else:
                     move=tryMoves[0]
-                    trapMove.append(self.board.check(move,data["you"]["head"],data["you"]["length"]))
+                    trapMove.append(board.check(move,data["you"]["head"],data["you"]["length"]))
+                else:
+                  break
 
 
         except IndexError as e:
           print(e)
           print("random")
-
           move = random.choice(possible_moves)
         print(f"MOVE: {move}")
         return {"move": move}
@@ -164,10 +193,11 @@ class Battlesnake(object):
         snake_block=[]
         #for peice in  data["you"]["body"]:
          # snake_block.append(peice)
+        board= self.boards[data["game"]["id"]]
         for snake in data["board"]["snakes"]:
           for peice in snake["body"]:
             snake_block.append(peice)
-            self.board.snake(peice)
+            board.snake(peice)
           snake_block.pop()#TODO check if the other snake will eat
         for pos_move in moves_ressult:
           temp={"x":(moves_ressult.get(pos_move)["x"]+head["x"]),"y":(moves_ressult.get(pos_move)["y"]+head["y"])}
@@ -236,7 +266,13 @@ class Battlesnake(object):
          "left":{"x":-1,"y":0}, 
          "right":{"x":1,"y":0}}
         move_return =[]
-
+        snake_head=[]
+        head_moves=[]
+        data = cherrypy.request.json
+        for s in data["board"]["snakes"]:
+          if s["head"]!=head:
+            snake_head.append(s["head"])
+        
         if len(food) >0:
           food.sort(key=lambda x:abs(x["x"]-head["x"])+abs(x["y"]-head["y"]))
           nearestFood=food[0]
@@ -255,7 +291,35 @@ class Battlesnake(object):
           else:
             return move
         return move
+    @cherrypy.expose
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.json_out()
+    def kill(self, move, head, food):
+        moves_ressult = {
+          "up":{"x":0,"y":1},
+         "down":{"x":0,"y":-1}, 
+         "left":{"x":-1,"y":0}, 
+         "right":{"x":1,"y":0}}
+        move_return =[]
+        
+        if len(food) >0:
+          food.sort(key=lambda x:abs(x["x"]-head["x"])+abs(x["y"]-head["y"]))
+          nearestFood=food[0]
+          #closest
+          #print(nearestFood)
+          for pos_move in move:
+            tempDistance=abs(nearestFood["x"]-head["x"]-moves_ressult.get(pos_move)["x"])+abs(nearestFood["y"]-head["y"]-moves_ressult.get(pos_move)["y"])
+            tempDistanceOpissite=abs(nearestFood["x"]-head["x"]+moves_ressult.get(pos_move)["x"])+abs(nearestFood["y"]-head["y"]+moves_ressult.get(pos_move)["y"])
+            if tempDistanceOpissite>tempDistance:
+              move_return.append(pos_move)
+          
+          if len(move_return)>0:
+            #print(move_return)
+            return move_return
 
+          else:
+            return move
+        return move
 
 if __name__ == "__main__":
     server = Battlesnake()
