@@ -9,7 +9,7 @@ For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python
 """
 class Board(object):
     def __init__(self, maxx, maxy):
-      self.board=[[{"visited":False,"snake":False} for i in range(maxy)] for j in range(maxx)]
+      self.board=[[{"visited":False,"snake":False,"tail":False,"head_move":False} for i in range(maxy)] for j in range(maxx)]
       self.maxx=maxx
       self.maxy=maxy
       self.turn=0
@@ -17,15 +17,25 @@ class Board(object):
 
     def clean(self,turn):
       self.turn=turn
-      self.board=[[{"visited":False,"snake":False} for i in range(self.maxy)] for j in range(self.maxx)]
+      self.board=[[{"visited":False,"snake":False,"tail":False,"head_move":False} for i in range(self.maxy)] for j in range(self.maxx)]
 
       return
     def snake(self,snake_piece):
-
       self.board[snake_piece["x"]][snake_piece["y"]]["snake"]=True
-      
       return
-
+    def tail(self,tail):
+      self.board[tail["x"]][tail["y"]]["tail"]=True
+    def head(self,head):
+      moves_ressult = {
+          "up":{"x":0,"y":1},
+         "down":{"x":0,"y":-1}, 
+         "left":{"x":-1,"y":0}, 
+         "right":{"x":1,"y":0}}
+      for move in moves_ressult:
+        temp={"x":(moves_ressult.get(move)["x"]+head["x"]),"y":(moves_ressult.get(move)["y"]+head["y"])}
+        if temp["x"]>=0 and temp["x"]<self.maxx and temp["y"]>=0 and temp["y"]<self.maxy:
+          if not self.board[temp["x"]][temp["y"]]["snake"]:
+            self.board[head["x"]][head["y"]]["head_move"]=True
 
     def check(self,move,head,length):
       moves_ressult = {
@@ -37,28 +47,46 @@ class Board(object):
       board=self.board.copy()
       board[to_visite[0]["x"]][to_visite[0]["y"]]["visited"]= False
       visited_stack=[]
+      head_move=False
+      tail=False
       while len(visited_stack)<=length:
         if len(to_visite)==0:
-          return {"wontTrap":False,"visited":len(visited_stack), "move":move}
+          return {"wontTrap":False,"visited":len(visited_stack), "move":move, "tail":tail, "head_move":head_move}
         tempPlace=to_visite.pop(0)
         visited_stack.append(tempPlace)
         if (tempPlace["y"]+1)<self.maxy:
-          if not board[tempPlace["x"]][tempPlace["y"]+1]["visited"] and not board[tempPlace["x"]][tempPlace["y"]+1]["snake"]:
+          if not board[tempPlace["x"]][tempPlace["y"]+1]["visited"] and not board[tempPlace["x"]][tempPlace["y"]+1]["snake"] and not board[tempPlace["x"]][tempPlace["y"]+1]["head_move"]:
             board[tempPlace["x"]][tempPlace["y"]+1]["visited"]= True
             to_visite.append({"x":tempPlace["x"],"y":tempPlace["y"]+1})
+          if board[tempPlace["x"]][tempPlace["y"]+1]["head_move"]:
+            head_move=True
+          if board[tempPlace["x"]][tempPlace["y"]+1]["tail"]:
+            tail=True
         if (tempPlace["y"]-1)>=0:
-          if not board[tempPlace["x"]][tempPlace["y"]-1]["visited"] and not board[tempPlace["x"]][tempPlace["y"]-1]["snake"]:
+          if not board[tempPlace["x"]][tempPlace["y"]-1]["visited"] and not board[tempPlace["x"]][tempPlace["y"]-1]["snake"] and not board[tempPlace["x"]][tempPlace["y"]-1]["head_move"]:
             board[tempPlace["x"]][tempPlace["y"]-1]["visited"]= True
             to_visite.append({"x":tempPlace["x"],"y":tempPlace["y"]-1})
+          if board[tempPlace["x"]][tempPlace["y"]-1]["head_move"]:
+            head_move=True
+          if board[tempPlace["x"]][tempPlace["y"]-1]["tail"]:
+            tail=True
         if (tempPlace["x"]+1)<self.maxx:
-          if not board[tempPlace["x"]+1][tempPlace["y"]]["visited"] and not board[tempPlace["x"]+1][tempPlace["y"]]["snake"]:
+          if not board[tempPlace["x"]+1][tempPlace["y"]]["visited"] and not board[tempPlace["x"]+1][tempPlace["y"]]["snake"] and not board[tempPlace["x"]+1][tempPlace["y"]]["head_move"]:
             board[tempPlace["x"]+1][tempPlace["y"]]["visited"]= True
             to_visite.append({"x":tempPlace["x"]+1,"y":tempPlace["y"]})
+          if board[tempPlace["x"]+1][tempPlace["y"]]["head_move"]:
+            head_move=True
+          if board[tempPlace["x"]+1][tempPlace["y"]]["tail"]:
+            tail=True
         if (tempPlace["x"]-1)>=0:
-          if not board[tempPlace["x"]-1][tempPlace["y"]]["visited"] and not board[tempPlace["x"]-1][tempPlace["y"]]["snake"]:
+          if not board[tempPlace["x"]-1][tempPlace["y"]]["visited"] and not board[tempPlace["x"]-1][tempPlace["y"]]["snake"] and not board[tempPlace["x"]-1][tempPlace["y"]]["head_move"]:
             board[tempPlace["x"]-1][tempPlace["y"]]["visited"]= True
             to_visite.append({"x":tempPlace["x"]-1,"y":tempPlace["y"]})
-      return {"wontTrap":True,"visited":0, "move":move}
+          if board[tempPlace["x"]-1][tempPlace["y"]]["head_move"]:
+            head_move=True
+          if board[tempPlace["x"]-1][tempPlace["y"]]["tail"]:
+            tail=True
+      return {"wontTrap":True,"visited":0, "move":move, "tail":tail, "head_move":head_move}
 
 
     def printboard(self):
@@ -136,22 +164,34 @@ class Battlesnake(object):
                 tryMoves.remove(move)
                 move=tryMovesNearest[0]
                 trapMove.append(board.check(move,data["you"]["head"],data["you"]["length"]))
+              count=0
               while len(tryMoves)>0:
+                count+=1
+                if count>6:
+                  raise Exception("stuck in loop")
                 print(f"trymove 5:{tryMoves}")
                 print(f"trymovenearest 3:{tryMovesNearest}")
                 print(f"trapmove 3:{trapMove}")
                 print(f"move 1:{move}")
                 tryMoves.remove(move)
+                print(len(tryMoves))
                 print(f"trymove 6:{tryMoves}")
                 print(f"trymovenearest 4:{tryMovesNearest}")
                 print(f"trapmove 4:{trapMove}")
                 if not trapMove[-1]["wontTrap"]:
                   if len(tryMoves)==0:
-                    tryMoves.extend(board_sanke_death_move.copy())
-                    trapMove.sort(key=lambda x:x["visited"])
+                    trapMove.sort(key=lambda x:x["tail"])
                     move=trapMove[-1]["move"]
-                  if len(tryMoves)==0:
-                    break
+                    if not trapMove[-1]["tail"]:
+                      trapMove.sort(key=lambda x:x["visited"])
+                      move=trapMove[-1]["move"]
+                    if len(board_sanke_death_move)<=0:
+                      break
+                    else:
+                      tryMoves.extend(board_sanke_death_move)
+                      move=tryMoves[0]
+                      board_sanke_death_move.clear()
+
                   else:
                     move=tryMoves[0]
                     trapMove.append(board.check(move,data["you"]["head"],data["you"]["length"]))
@@ -198,7 +238,9 @@ class Battlesnake(object):
           for peice in snake["body"]:
             snake_block.append(peice)
             board.snake(peice)
-          snake_block.pop()#TODO check if the other snake will eat
+          #TODO check if the other snake will eat
+          board.tail(snake_block.pop())
+          board.head(snake["head"])
         for pos_move in moves_ressult:
           temp={"x":(moves_ressult.get(pos_move)["x"]+head["x"]),"y":(moves_ressult.get(pos_move)["y"]+head["y"])}
           if temp in snake_block:
